@@ -1,4 +1,4 @@
-importScripts("/scram/scramjet.all.js");
+importScripts("https://cdn.jsdelivr.net/gh/Onex558/proxy-aka-static@main/scram/scramjet.all.js");
 
 const { ScramjetServiceWorker } = $scramjetLoadWorker();
 const scramjet = new ScramjetServiceWorker();
