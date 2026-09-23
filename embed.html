@@ -6,55 +6,49 @@
   <script src="/baremux/index.js"></script>
   <script src="/scram/scramjet.all.js"></script>
   <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-
-    html, body {
-      width: 100%;
-      height: 100%;
-      overflow: hidden;
-      background: #111;
-    }
-
-    #frame {
-      width: 100%;
-      height: 100%;
-    }
-
-    #frame iframe {
-      width: 100% !important;
-      height: 100% !important;
-      border: none !important;
-      display: block;
-    }
+    * { margin:0; padding:0; box-sizing:border-box; }
+    html, body { width:100%; height:100%; overflow:hidden; background:#0f0f13; color:white; font-family:system-ui; }
+    #frame { width:100%; height:100%; }
+    #frame iframe { width:100% !important; height:100% !important; border:none; }
+    #error { padding:40px; max-width:600px; margin:auto; }
   </style>
 </head>
 <body>
   <div id="frame"></div>
+  <div id="error" style="display:none;"></div>
 
   <script>
-    const WISP = "wss://glseries.net/wisp/";
-
-    const { ScramjetController } = $scramjetLoadController();
-
-    const scramjet = new ScramjetController({
-      files: {
-        wasm: "/scram/scramjet.wasm.wasm",
-        all: "/scram/scramjet.all.js",
-        sync: "/scram/scramjet.sync.js"
-      }
-    });
-
-    scramjet.init();
-    navigator.serviceWorker.register("/sw.js");
-
-    const connection = new BareMux.BareMuxConnection("/baremux/worker.js");
+    function showError(msg) {
+      document.getElementById("frame").style.display = "none";
+      const el = document.getElementById("error");
+      el.style.display = "block";
+      el.innerHTML = `<h2>Error</h2><p>${msg}</p><pre style="background:#222;padding:12px;border-radius:8px;overflow:auto">${msg}</pre>`;
+    }
 
     async function start() {
       try {
+        if (typeof $scramjetLoadController !== "function") {
+          throw new Error("$scramjetLoadController is missing. Check if /scram/scramjet.all.js loaded.");
+        }
+        if (typeof BareMux === "undefined") {
+          throw new Error("BareMux is missing. Check if /baremux/index.js loaded.");
+        }
+
+        const WISP = "wss://glseries.net/wisp/";
+
+        const { ScramjetController } = $scramjetLoadController();
+        const scramjet = new ScramjetController({
+          files: {
+            wasm: "/scram/scramjet.wasm.wasm",
+            all: "/scram/scramjet.all.js",
+            sync: "/scram/scramjet.sync.js"
+          }
+        });
+
+        await scramjet.init();
+        await navigator.serviceWorker.register("/sw.js");
+
+        const connection = new BareMux.BareMuxConnection("/baremux/worker.js");
         await connection.setTransport("/epoxy/index.mjs", [{ wisp: WISP }]);
 
         const frame = scramjet.createFrame();
@@ -66,7 +60,7 @@
         frame.go(url);
       } catch (err) {
         console.error(err);
-        document.body.innerHTML = `<h2 style="color:white;padding:20px">Error: ${err.message}</h2>`;
+        showError(err.message || String(err));
       }
     }
 
