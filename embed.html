@@ -6,16 +6,40 @@
   <script src="/baremux/index.js"></script>
   <script src="/scram/scramjet.all.js"></script>
   <style>
-    html, body, #frame { margin:0; height:100%; width:100%; border:none; background:#111; }
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #111;
+    }
+
+    #frame {
+      width: 100%;
+      height: 100%;
+    }
+
+    #frame iframe {
+      width: 100% !important;
+      height: 100% !important;
+      border: none !important;
+      display: block;
+    }
   </style>
 </head>
 <body>
   <div id="frame"></div>
 
   <script>
-    const WISP = "wss://glseries.net/wisp/"; // change this later if slow
+    const WISP = "wss://glseries.net/wisp/";
 
     const { ScramjetController } = $scramjetLoadController();
+
     const scramjet = new ScramjetController({
       files: {
         wasm: "/scram/scramjet.wasm.wasm",
@@ -30,15 +54,20 @@
     const connection = new BareMux.BareMuxConnection("/baremux/worker.js");
 
     async function start() {
-      await connection.setTransport("/epoxy/index.mjs", [{ wisp: WISP }]);
+      try {
+        await connection.setTransport("/epoxy/index.mjs", [{ wisp: WISP }]);
 
-      const frame = scramjet.createFrame();
-      document.getElementById("frame").appendChild(frame.frame);
+        const frame = scramjet.createFrame();
+        document.getElementById("frame").appendChild(frame.frame);
 
-      let url = location.hash.slice(1) || "https://start.duckduckgo.com";
-      if (!url.startsWith("http")) url = "https://" + url;
+        let url = location.hash.slice(1) || "https://start.duckduckgo.com";
+        if (!url.startsWith("http")) url = "https://" + url;
 
-      frame.go(url);
+        frame.go(url);
+      } catch (err) {
+        console.error(err);
+        document.body.innerHTML = `<h2 style="color:white;padding:20px">Error: ${err.message}</h2>`;
+      }
     }
 
     start();
