@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%">
+  <foreignObject width="100%" height="100%">
+    <div xmlns="http://www.w3.org/1999/xhtml" style="width:100%;height:100%;background:#0f0f13;color:white;font:16px system-ui;margin:0;padding:0;">
+      <p id="status" style="margin:0;padding:16px">Loading proxy…</p>
+      <iframe id="app" title="Proxy" style="display:none;width:100%;height:100%;border:0" allow="autoplay; fullscreen; clipboard-read; clipboard-write; gamepad"></iframe>
+    </div>
+  </foreignObject>
+
+  <script><![CDATA[
+    (async () => {
+      const status = document.getElementById('status');
+
+      function setStatus(msg) {
+        status.textContent = msg;
+      }
+
+      try {
+        const base = new URL('./', location.href);
+
+        setStatus("Registering service worker…");
+        const registration = await navigator.serviceWorker.register(new URL('sw.js', base), {
+          scope: base.pathname,
+          updateViaCache: 'none'
+        });
+
+        const worker = registration.active || registration.installing || registration.waiting;
+        if (!worker) throw new Error("Service worker did not start");
+
+        if (worker.state !== 'activated') {
+          setStatus("Waiting for worker…");
+          await new Promise((resolve, reject) => {
+            const timeout = setTimeout(() => reject(new Error("Worker timeout")), 8000);
+            function check() {
+              if (worker.state === 'activated') {
+                clearTimeout(timeout);
+                resolve();
+              }
+              if (worker.state === 'redundant') {
+                clearTimeout(timeout);
+                reject(new Error("Worker failed"));
+              }
+            }
+            worker.addEventListener('statechange', check);
+            check();
+          });
+        }
+
+        setStatus("Loading…");
+        const app = document.getElementById('app');
+        app.src = new URL('index.html', base).href;
+        app.style.display = 'block';
+        status.remove();
+
+      } catch (err) {
+        status.textContent = "Failed: " + err.message;
+        console.error(err);
+      }
+    })();
+  ]]></script>
+</svg>
