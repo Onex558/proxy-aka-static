@@ -58,7 +58,6 @@
   <div id="error"></div>
 
   <script>
-    // Backup list of Wisp servers
     const WISP_SERVERS = [
       "wss://wisp.mercurywork.shop/",
       "wss://anura.pro/",
@@ -114,7 +113,8 @@
         await scramjet.init();
         await navigator.serviceWorker.register("/sw.js");
 
-        const connection = new BareMux.BareMuxConnection("/baremux/worker.js");
+        // ← Fixed: force normal Worker instead of SharedWorker
+        const connection = new BareMux.BareMuxConnection("/baremux/worker.js", "worker");
         await tryConnect(connection, WISP_SERVERS);
 
         const frame = scramjet.createFrame();
